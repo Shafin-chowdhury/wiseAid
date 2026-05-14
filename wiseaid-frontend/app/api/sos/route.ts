@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/src/lib/mongodb";
+import { connectToDatabase } from "../../../src/lib/mongodb";
 import mongoose from "mongoose";
 
 // Define Alert Schema directly in the API for simplicity
