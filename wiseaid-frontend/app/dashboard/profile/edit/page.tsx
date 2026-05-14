@@ -1,139 +1,140 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
-import { ArrowLeft, Save, HeartPulse, AlertTriangle, User, MapPin } from "lucide-react";
+import { Camera, Save, MapPin, Heart, Phone } from "lucide-react";
 
 export default function EditProfile() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Form State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "Abul Kashem",
-    address: "House 12, Road 5, Dhanmondi, Dhaka",
-    conditions: "",
-    allergies: "",
-    bloodGroup: "",
-    emergencyNote: ""
+    fullName: "", phone: "", guardianPhone: "", bloodGroup: "",
+    age: "", profileImage: "", diseases: "",
+    houseNumber: "", floor: "", apartment: "", additionalNotes: "", address: ""
   });
 
-  // Load existing data from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("wiseAid_medical_data");
-    if (saved) {
-      setFormData(JSON.parse(saved));
-    }
+    const email = localStorage.getItem("userEmail");
+    fetch(`/api/get-profile?email=${email}`).then(res => res.json()).then(data => {
+      setFormData({
+        ...data,
+        houseNumber: data.detailedAddress?.houseNumber || "",
+        floor: data.detailedAddress?.floor || "",
+        apartment: data.detailedAddress?.apartment || "",
+        additionalNotes: data.detailedAddress?.additionalNotes || "",
+        address: data.liveLocation?.address || ""
+      });
+    });
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, profileImage: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
+    const email = localStorage.getItem("userEmail");
+    
+    const payload = {
+      email,
+      ...formData,
+      detailedAddress: {
+        houseNumber: formData.houseNumber,
+        floor: formData.floor,
+        apartment: formData.apartment,
+        additionalNotes: formData.additionalNotes
+      },
+      liveLocation: { address: formData.address },
+      diseases: typeof formData.diseases === 'string' ? formData.diseases.split(",") : formData.diseases
+    };
 
-    // Save to Browser Memory
-    localStorage.setItem("wiseAid_medical_data", JSON.stringify(formData));
+    const res = await fetch("/api/complete-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-    // Small delay for professional feel, then redirect
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push("/dashboard/profile");
-    }, 800);
+    if (res.ok) router.push("/dashboard");
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
-      <div className="max-w-3xl mx-auto">
-        <Link href="/dashboard/profile" className="flex items-center text-slate-500 hover:text-blue-600 mb-8 font-bold transition-all">
-          <ArrowLeft className="mr-2" size={20} /> Back to Profile
-        </Link>
+    <div className="min-h-screen bg-[#F0F4F8] p-6 lg:p-12 font-sans">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-white rounded-[40px] shadow-2xl p-8 lg:p-16 border border-white">
+        <h1 className="text-4xl font-black text-slate-800 mb-10 italic tracking-tighter">Medical File Update</h1>
 
-        <form onSubmit={handleSave} className="bg-white rounded-[40px] p-8 md:p-12 border border-slate-200 shadow-sm space-y-8">
-          <div>
-            <h1 className="text-3xl font-black text-slate-950">Update Medical Profile</h1>
-            <p className="text-slate-500 font-medium">This information helps WiseAid responders identify you.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          {/* IMAGE UPLOAD SECTION */}
+          <div className="flex flex-col items-center gap-4">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-48 h-48 rounded-[40px] bg-slate-100 border-4 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all overflow-hidden relative group"
+            >
+              {formData.profileImage ? (
+                <img src={formData.profileImage} className="w-full h-full object-cover" />
+              ) : (
+                <Camera size={40} className="text-slate-400" />
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-white text-xs font-black uppercase">Change Photo</span>
+              </div>
+            </div>
+            <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Clear Face Photo Required</p>
           </div>
 
-          <div className="space-y-6">
-            {/* Read-only / System Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Full Name</label>
-                <Input 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="h-14 rounded-2xl border-slate-200 font-bold" 
-                />
+          {/* FORM FIELDS */}
+          <div className="md:col-span-2 grid grid-cols-2 gap-6">
+            <Input label="Full Name" value={formData.fullName} onChange={v => setFormData({...formData, fullName: v})} />
+            <Input label="Blood Group" value={formData.bloodGroup} onChange={v => setFormData({...formData, bloodGroup: v})} placeholder="Ex: O+" />
+            <Input label="Personal Phone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
+            <Input label="Guardian Phone" value={formData.guardianPhone} onChange={v => setFormData({...formData, guardianPhone: v})} />
+            
+            <div className="col-span-2 bg-blue-50 p-6 rounded-3xl space-y-4">
+              <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><MapPin size={14}/> Rescue Coordinates</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="House/Holding #" value={formData.houseNumber} onChange={v => setFormData({...formData, houseNumber: v})} required />
+                <Input label="Floor Level" value={formData.floor} onChange={v => setFormData({...formData, floor: v})} required placeholder="Ex: 4th Floor" />
+                <Input label="Flat / Apt #" value={formData.apartment} onChange={v => setFormData({...formData, apartment: v})} />
+                <Input label="Area / Sector" value={formData.address} onChange={v => setFormData({...formData, address: v})} required />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Blood Group</label>
-                <Input 
-                  placeholder="e.g. O Positive" 
-                  value={formData.bloodGroup}
-                  onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})}
-                  className="h-14 rounded-2xl border-slate-200 font-bold text-blue-600" 
-                />
-              </div>
+              <textarea 
+                className="w-full bg-white border-none rounded-2xl p-4 text-sm font-bold" 
+                placeholder="Landmarks or gate codes..."
+                value={formData.additionalNotes}
+                onChange={e => setFormData({...formData, additionalNotes: e.target.value})}
+              />
             </div>
 
-            <div className="space-y-2">
-               <label className="text-xs font-black uppercase text-slate-400 ml-1">Detailed Address</label>
-               <Input 
-                  value={formData.address} 
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  className="h-14 rounded-2xl border-slate-200 font-medium" 
-               />
-            </div>
-
-            {/* Medical Specifics */}
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs font-black uppercase text-rose-500 ml-1">
-                  <HeartPulse size={14}/> Pre-existing Conditions
-                </label>
-                <textarea 
-                  value={formData.conditions}
-                  onChange={(e) => setFormData({...formData, conditions: e.target.value})}
-                  placeholder="e.g. Diabetes, Asthma..."
-                  className="w-full h-24 p-4 rounded-2xl border-slate-200 border focus:ring-2 focus:ring-blue-100 outline-none font-medium" 
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs font-black uppercase text-amber-500 ml-1">
-                  <AlertTriangle size={14}/> Allergies
-                </label>
-                <textarea 
-                  value={formData.allergies}
-                  onChange={(e) => setFormData({...formData, allergies: e.target.value})}
-                  placeholder="e.g. Peanuts, Penicillin..."
-                  className="w-full h-24 p-4 rounded-2xl border-slate-200 border focus:ring-2 focus:ring-blue-100 outline-none font-medium" 
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Emergency Instructions</label>
-                <textarea 
-                  value={formData.emergencyNote}
-                  onChange={(e) => setFormData({...formData, emergencyNote: e.target.value})}
-                  placeholder="Who should we call first?"
-                  className="w-full h-24 p-4 rounded-2xl border-slate-200 border focus:ring-2 focus:ring-blue-100 outline-none font-medium bg-slate-50" 
-                />
-              </div>
-            </div>
+            <button disabled={loading} className="col-span-2 bg-blue-600 text-white p-6 rounded-3xl font-black text-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
+              {loading ? "SAVING..." : "CONFIRM PROFILE DETAILS"}
+            </button>
           </div>
+        </div>
+      </form>
+    </div>
+  );
+}
 
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full h-16 text-lg font-black bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-lg shadow-blue-100 transition-all"
-          >
-            {isLoading ? "UPDATING..." : "SAVE MEDICAL PROFILE"}
-          </Button>
-        </form>
-      </div>
+function Input({ label, value, onChange, placeholder, required = false }: any) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">{label}</label>
+      <input 
+        required={required}
+        value={value} 
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all" 
+      />
     </div>
   );
 }

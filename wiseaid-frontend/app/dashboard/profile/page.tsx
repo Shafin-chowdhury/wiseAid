@@ -1,148 +1,179 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { Button } from "@/src/components/ui/button";
-import {
-  ArrowLeft,
-  User,
-  MapPin,
-  Activity,
-  AlertCircle,
-  PlusCircle,
-  ShieldCheck,
-  ChevronRight,
-  LogOut,
-  Lock
+import React, { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  ArrowLeft, HeartPulse, Plus, X, Save, Edit3, CheckCircle, Camera, 
+  MapPin, Phone, Droplets, User 
 } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
 
-export default function MyProfile() {
-  const [profile, setProfile] = useState({
-    name: "Abul Kashem",
-    address: "House 12, Road 5, Dhanmondi, Dhaka",
-    conditions: "",
-    allergies: "",
-    bloodGroup: "",
-    emergencyNote: ""
-  });
+export default function HealthProfile() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  const [diseaseInput, setDiseaseInput] = useState("");
+  const [tempDiseases, setTempDiseases] = useState<string[]>([]);
 
-  // Pull data from browser memory whenever page loads
   useEffect(() => {
-    const saved = localStorage.getItem("wiseAid_medical_data");
-    if (saved) {
-      setProfile(JSON.parse(saved));
+    const email = localStorage.getItem("userEmail");
+    if (!email) {
+      router.push("/login");
+      return;
     }
-  }, []);
+    fetch(`/api/get-profile?email=${email}`)
+      .then(res => res.json())
+      .then(data => {
+        setUser(data);
+        setTempDiseases(data.diseases || []);
+      });
+  }, [router]);
+
+  // Handle Profile Picture Selection
+  const handleImageClick = () => {
+    if (isEditing) fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUser({ ...user, profileImage: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    const res = await fetch("/api/complete-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        ...user, 
+        diseases: tempDiseases, 
+        email: user.email 
+      })
+    });
+    if (res.ok) {
+      setIsEditing(false);
+      setLoading(false);
+    }
+  };
+
+  if (!user) return <div className="h-screen flex items-center justify-center bg-[#F7F9FC] font-bold text-blue-600">LOADING YOUR MEDICAL FILE...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      
-      {/* --- HEADER --- */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center text-slate-500 hover:text-blue-600 font-bold">
-            <ArrowLeft size={20} className="mr-2" /> Back
-          </Link>
-          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Health Profile</h1>
-        </div>
-        <Link href="/dashboard/profile/edit">
-          <Button className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 px-6 h-11">
-            Edit Profile
-          </Button>
-        </Link>
-      </header>
-
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="min-h-screen bg-[#F7F9FC] text-slate-800 p-6 md:p-12 font-sans">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Navigation Header */}
+        <div className="flex justify-between items-center mb-10">
+          <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 font-black text-slate-400 hover:text-blue-600 transition-all text-xl">
+            <ArrowLeft size={28} /> BACK
+          </button>
           
-          {/* --- LEFT SIDE: IDENTITY --- */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm text-center">
-              <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center mb-4 mx-auto border-4 border-white shadow-md">
-                <User size={48} className="text-blue-400" />
-              </div>
-              <h2 className="text-2xl font-black text-slate-900">{profile.name}</h2>
-              <div className="flex items-center justify-center gap-2 mt-2 px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-black uppercase tracking-widest mx-auto w-fit">
-                <ShieldCheck size={14} /> Verified Patient
-              </div>
-              
-              <div className="mt-8 space-y-4 text-left border-t border-slate-50 pt-6">
-                <div className="flex gap-3 items-start">
-                  <MapPin className="text-blue-500 shrink-0 mt-1" size={18} />
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">{profile.address}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Emergency Info (Allergies) */}
-            <div className={`rounded-[32px] p-8 text-white transition-colors ${profile.allergies ? 'bg-rose-600' : 'bg-slate-800'}`}>
-              <h3 className="font-black text-lg mb-2 flex items-center gap-2">
-                <AlertCircle size={20} /> Emergency Alerts
-              </h3>
-              <div className="mt-4 p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">Known Allergies</p>
-                <p className="font-bold text-sm">
-                  {profile.allergies || "None reported"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* --- RIGHT SIDE: MEDICAL & SETTINGS --- */}
-          <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm">
-              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-                <Activity className="text-blue-600" size={24} /> Clinical Snapshot
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Chronic Conditions</span>
-                  <p className="text-lg font-bold text-slate-800 mt-2">
-                    {profile.conditions || "No conditions reported"}
-                  </p>
-                </div>
-
-                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Blood Group</span>
-                  <p className="text-lg font-bold text-blue-600 mt-2 italic">
-                    {profile.bloodGroup || "Not specified"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Special Instructions */}
-              <div className="mt-6 p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
-                <span className="text-xs font-black text-blue-400 uppercase tracking-widest">Emergency Note</span>
-                <p className="text-slate-700 font-medium mt-2 leading-relaxed">
-                  {profile.emergencyNote || "No instructions provided yet."}
-                </p>
-              </div>
-            </div>
-
-            {/* Settings Block */}
-            <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
-               <button className="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-colors border-b border-slate-50">
-                  <div className="flex items-center gap-4 text-slate-700 font-bold">
-                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
-                      <Lock size={18} className="text-slate-500" />
-                    </div>
-                    Privacy Settings
-                  </div>
-                  <ChevronRight size={20} className="text-slate-300" />
-               </button>
-               <button className="w-full flex items-center justify-between p-6 hover:bg-red-50 transition-colors group">
-                  <div className="flex items-center gap-4 text-red-600 font-bold">
-                    <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                      <LogOut size={18} />
-                    </div>
-                    Logout
-                  </div>
-               </button>
-            </div>
-          </div>
+          <Button 
+            onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+            className={`${isEditing ? 'bg-emerald-500' : 'bg-blue-600'} text-white rounded-3xl px-10 h-16 font-black text-lg shadow-lg active:scale-95 transition-all`}
+          >
+            {loading ? "SAVING..." : isEditing ? "FINISH & SAVE" : "EDIT MY INFO"}
+          </Button>
         </div>
-      </main>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          
+          {/* Identity Card */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-200 text-center relative overflow-hidden">
+              <div 
+                className={`relative inline-block mb-6 ${isEditing ? 'cursor-pointer hover:opacity-80' : ''}`}
+                onClick={handleImageClick}
+              >
+                <img 
+                  src={user.profileImage || `https://ui-avatars.com/api/?name=${user.fullName}&background=DBEAFE&color=1E40AF`} 
+                  className="w-40 h-40 rounded-full border-8 border-slate-50 shadow-inner object-cover"
+                />
+                {isEditing && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full text-white">
+                    <Camera size={32} />
+                  </div>
+                )}
+                <CheckCircle className="absolute bottom-2 right-2 text-emerald-500 fill-white" size={32} />
+                <input type="file" ref={fileInputRef} hidden onChange={handleFileChange} accept="image/*" />
+              </div>
+              
+              <h2 className="text-3xl font-black text-slate-900 leading-tight">{user.fullName}</h2>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mt-2">{user.email}</p>
+              
+              <div className="mt-8 pt-8 border-t border-slate-50 space-y-4">
+                <div className="flex items-center justify-between px-4">
+                  <span className="text-slate-400 font-bold text-xs uppercase">Blood Group</span>
+                  <span className="text-2xl font-black text-red-500 italic">{user.bloodGroup || "O+"}</span>
+                </div>
+                <div className="flex items-center justify-between px-4">
+                   <MapPin size={18} className="text-blue-500" />
+                   <span className="font-bold text-slate-700">{user.area}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Health Records Column */}
+          <div className="lg:col-span-8">
+            <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-200 min-h-[600px] flex flex-col">
+              <div className="flex items-center gap-4 mb-10">
+                <HeartPulse size={36} className="text-red-500" />
+                <h3 className="text-3xl font-black text-slate-800">Health History</h3>
+              </div>
+
+              {/* Add New Logic */}
+              {isEditing && (
+                <div className="mb-10 p-8 bg-blue-50 rounded-[40px] border border-blue-100 flex gap-4 animate-in slide-in-from-top-4">
+                  <Input 
+                    placeholder="Type a condition (e.g. Asthma)..." 
+                    className="h-16 rounded-2xl border-none shadow-sm text-xl px-6 bg-white"
+                    value={diseaseInput}
+                    onChange={(e) => setDiseaseInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && diseaseInput && (setTempDiseases([...tempDiseases, diseaseInput]), setDiseaseInput(""))}
+                  />
+                  <Button 
+                    onClick={() => { if(diseaseInput) { setTempDiseases([...tempDiseases, diseaseInput]); setDiseaseInput(""); } }}
+                    className="h-16 w-16 bg-blue-600 text-white rounded-2xl shadow-md"
+                  >
+                    <Plus size={32} strokeWidth={3} />
+                  </Button>
+                </div>
+              )}
+
+              {/* Conditions List */}
+              <div className="flex-1 space-y-4">
+                {tempDiseases.map((d, index) => (
+                  <div key={index} className="flex items-center justify-between bg-slate-50 p-6 rounded-[30px] border border-slate-100 hover:border-blue-200 transition-all">
+                    <div className="flex items-center gap-6">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-black text-blue-600">
+                        {index + 1}
+                      </div>
+                      <span className="font-black text-slate-700 text-xl tracking-tight uppercase">{d}</span>
+                    </div>
+                    {isEditing && (
+                      <button onClick={() => setTempDiseases(tempDiseases.filter((_, i) => i !== index))} className="text-slate-300 hover:text-red-500 transition-colors">
+                        <X size={28} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
