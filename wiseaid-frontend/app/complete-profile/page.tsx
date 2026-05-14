@@ -38,6 +38,11 @@ export default function CompleteProfile() {
     }
   };
 
+  // ADDED: The missing remove handler function to fix the build error
+  const removeDisease = (indexToRemove: number) => {
+    setDiseaseList(diseaseList.filter((_, index) => index !== indexToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (diseaseList.length === 0) return alert("Please add at least one condition.");
@@ -149,7 +154,7 @@ export default function CompleteProfile() {
           <div className="mb-10">
             <div className="flex items-center gap-2 text-red-500 mb-2">
               <AlertTriangle size={20} />
-              <span className="text-xs  font-black uppercase tracking-widest">Medical Critical Data</span>
+              <span className="text-xs   font-black uppercase tracking-widest">Medical Critical Data</span>
             </div>
             <h2 className="text-4xl text-black font-black tracking-tight mb-2">Health Record Builder</h2>
             <p className="text-slate-400 text-lg">Add all chronic illnesses or past surgeries.</p>
@@ -192,7 +197,7 @@ export default function CompleteProfile() {
             {diseaseList.length === 0 && (
               <div className="h-40 border-2 border-dashed border-slate-800 rounded-[40px] flex flex-col items-center justify-center opacity-30">
                 <Activity size={48} className="mb-2 text-black " />
-                <p className="font-bold uppercase text-black  tracking-widest text-xs">Awaiting Medical Data</p>
+                <p className="font-bold uppercase text-black   tracking-widest text-xs">Awaiting Medical Data</p>
               </div>
             )}
           </div>
@@ -217,4 +222,3 @@ export default function CompleteProfile() {
     </div>
   );
 }
-
