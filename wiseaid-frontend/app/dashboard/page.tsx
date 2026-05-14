@@ -39,14 +39,14 @@ export default function Dashboard() {
     setTimeout(() => setSosActive(false), 8000);
   };
 
-  const services = [
-    { title: 'My Health Profile', path: '/dashboard/profile', icon: <UserCircle />, color: 'bg-blue-100 text-blue-600' },
-    { title: 'Book Appointment', path: '/dashboard/appointment', icon: <Stethoscope />, color: 'bg-indigo-100 text-indigo-600' },
-    { title: 'Request Ambulance', path: '/dashboard/ambulance', icon: <Truck />, color: 'bg-red-100 text-red-600' },
-    { title: 'Medicine Reminder', path: '/dashboard/medicine', icon: <Pill />, color: 'bg-emerald-100 text-emerald-600' },
-    { title: 'Daily Meal Planner', path: '/dashboard/meals', icon: <Utensils />, color: 'bg-orange-100 text-orange-600' },
-    { title: 'IOT Health Activity', path: '/dashboard/activity', icon: <Activity />, color: 'bg-cyan-100 text-cyan-600' },
-  ];
+const services = [
+  { title: 'My Health Profile', path: '/dashboard/profile', icon: UserCircle, color: 'bg-blue-100 text-blue-600' },
+  { title: 'Book Appointment', path: '/dashboard/appointment', icon: Stethoscope, color: 'bg-indigo-100 text-indigo-600' },
+  { title: 'Request Ambulance', path: '/dashboard/ambulance', icon: Truck, color: 'bg-red-100 text-red-600' },
+  { title: 'Medicine Reminder', path: '/dashboard/medicine', icon: Pill, color: 'bg-emerald-100 text-emerald-600' },
+  { title: 'Daily Meal Planner', path: '/dashboard/meals', icon: Utensils, color: 'bg-orange-100 text-orange-600' },
+  { title: 'IOT Health Activity', path: '/dashboard/activity', icon: Activity, color: 'bg-cyan-100 text-cyan-600' },
+];
 
   return (
     <div className="h-screen w-full bg-[#F0F4F8] flex overflow-hidden font-sans text-slate-800">
@@ -88,15 +88,24 @@ export default function Dashboard() {
           </header>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((s, i) => (
-              <div key={i} onClick={() => router.push(s.path)} className="bg-white p-8 rounded-[40px] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer border border-slate-50 flex flex-col group">
-                <div className={`${s.color} w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform`}>
-                  {React.cloneElement(s.icon as React.ReactElement, { size: 32 })}
-                </div>
-                <h3 className="text-slate-800 font-black text-xl mb-1">{s.title}</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Access Service</p>
-              </div>
-            ))}
+           {services.map((s, i) => {
+  // Extract the icon component class reference dynamically
+  const IconComponent = s.icon; 
+  
+  return (
+    <div 
+      key={i} 
+      onClick={() => router.push(s.path)} 
+      className="bg-white p-8 rounded-[40px] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer border border-slate-50 flex flex-col group"
+    >
+      <div className={`${s.color} w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform`}>
+        <IconComponent size={32} /> 
+      </div>
+      <h3 className="text-slate-800 font-black text-xl mb-1">{s.title}</h3>
+      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Access Service</p>
+    </div>
+  );
+})}
 
             {/* SOS BUTTON */}
             <div 
