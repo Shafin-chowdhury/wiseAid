@@ -93,10 +93,26 @@ export default function EditProfile() {
 
           {/* FORM FIELDS */}
           <div className="md:col-span-2 grid grid-cols-2 gap-6">
-            <Input label="Full Name" value={formData.fullName} onChange={v => setFormData({...formData, fullName: v})} />
-            <Input label="Blood Group" value={formData.bloodGroup} onChange={v => setFormData({...formData, bloodGroup: v})} placeholder="Ex: O+" />
-            <Input label="Personal Phone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-            <Input label="Guardian Phone" value={formData.guardianPhone} onChange={v => setFormData({...formData, guardianPhone: v})} />
+            <Input 
+  placeholder="Full Name" 
+  value={formData.fullName} 
+  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} 
+/>
+<Input 
+  placeholder="Blood Group" 
+  value={formData.bloodGroup} 
+  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })} 
+/>
+<Input 
+  placeholder="Personal Phone" 
+  value={formData.phone} 
+  onChange={(e) => setFormData({ ...formData, phone: e.target.value })} 
+/>
+<Input 
+  placeholder="Guardian Phone" 
+  value={formData.guardianPhone} 
+  onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })} 
+/>
             
             <div className="col-span-2 bg-blue-50 p-6 rounded-3xl space-y-4">
               <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><MapPin size={14}/> Rescue Coordinates</h3>
